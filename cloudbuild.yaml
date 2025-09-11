@@ -23,9 +23,10 @@ images:
 options:
     substitutionOption: ALLOW_LOOSE
     logging: CLOUD_LOGGING_ONLY
+    machineType: 'E2_HIGHCPU_32'
 
 tags:
     - nominatim-fast
 
 # Timeout in seconds
-timeout: '1200s'
+timeout: '3600s'
