@@ -21,14 +21,6 @@ stopServices() {
 }
 trap stopServices SIGTERM TERM INT
 
-/app/config.sh
-
-if id nominatim >/dev/null 2>&1; then
-  echo "user nominatim already exists"
-else
-  useradd -m -p ${NOMINATIM_PASSWORD} nominatim
-fi
-
 IMPORT_FINISHED=/var/lib/postgresql/16/main/import-finished
 
 if [ ! -f ${IMPORT_FINISHED} ]; then

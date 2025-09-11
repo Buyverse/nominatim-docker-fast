@@ -1,7 +1,8 @@
+FROM ubuntu:24.04 AS build
+
 ARG NOMINATIM_VERSION=5.1.0
 ARG USER_AGENT=mediagis/nominatim-docker:${NOMINATIM_VERSION}
 
-FROM ubuntu:24.04 AS build
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
@@ -88,14 +89,20 @@ FROM scratch
 
 COPY --from=build / /
 
+
 # Please override this
 ENV NOMINATIM_PASSWORD=qaIACxO6wMR3
 ENV WARMUP_ON_STARTUP=false
 
+ARG PBF_URL
+ENV PBF_URL=$PBF_URL
+RUN if [ -z "$PBF_URL" ]; then echo "ERROR: PBF_URL build argument must be set" >&2; exit 1; fi
+
 ENV PROJECT_DIR=/nominatim
 
+
 ARG USER_AGENT
-ENV USER_AGENT=${USER_AGENT}
+ENV USER_AGENT=$USER_AGENT
 
 WORKDIR /app
 
@@ -103,5 +110,7 @@ EXPOSE 5432
 EXPOSE 8080
 
 COPY conf.d/env $PROJECT_DIR/.env
+
+RUN /app/init.sh
 
 CMD ["/app/start.sh"]

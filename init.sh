@@ -1,5 +1,12 @@
 #!/bin/bash -ex
 
+IMPORT_FINISHED=/var/lib/postgresql/16/main/import-finished
+if [ -f ${IMPORT_FINISHED} ]; then
+  exit 0
+fi
+
+/app/config.sh
+
 OSMFILE=${PROJECT_DIR}/data.osm.pbf
 
 CURL=("curl" "-L" "-A" "${USER_AGENT}" "--fail-with-body")
@@ -9,6 +16,12 @@ SCP='sshpass -p DMg5bmLPY7npHL2Q scp -o StrictHostKeyChecking=no u355874-sub1@u3
 # Check if THREADS is not set or is empty
 if [ -z "$THREADS" ]; then
   THREADS=$(nproc)
+fi
+
+if id nominatim >/dev/null 2>&1; then
+  echo "user nominatim already exists"
+else
+  useradd -m -p ${NOMINATIM_PASSWORD} nominatim
 fi
 
 # we re-host the files on a Hetzner storage box because inconsiderate users eat up all of
@@ -146,3 +159,5 @@ rm -f ${PROJECT_DIR}/tiger-nominatim-preprocessed.csv.tar.gz
 if [ "$PBF_URL" != "" ]; then
   rm -f ${OSMFILE}
 fi
+
+touch ${IMPORT_FINISHED}
