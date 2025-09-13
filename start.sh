@@ -1,4 +1,8 @@
 #!/bin/bash -ex
+export PGSSLMODE=disable
+export PGPASSWORD=$NOMINATIM_PASSWORD
+export PGHOST=localhost
+export NOMINATIM_DATABASE_DSN=pgsql:host=/tmp;port=5432;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
 
 tailpid=0
 replicationpid=0
@@ -23,12 +27,7 @@ trap stopServices SIGTERM TERM INT
 
 IMPORT_FINISHED=/var/lib/postgresql/16/main/import-finished
 
-if [ ! -f ${IMPORT_FINISHED} ]; then
-  /app/init.sh
-  touch ${IMPORT_FINISHED}
-else
-  chown -R nominatim:nominatim ${PROJECT_DIR}
-fi
+chown -R nominatim:nominatim ${PROJECT_DIR}
 
 service postgresql start
 
@@ -59,6 +58,7 @@ fi
 tail -Fv /var/log/postgresql/postgresql-16-main.log &
 tailpid=${!}
 
+
 if [ "$WARMUP_ON_STARTUP" = "true" ]; then
   export NOMINATIM_QUERY_TIMEOUT=600
   export NOMINATIM_REQUEST_TIMEOUT=3600
@@ -86,7 +86,7 @@ echo "Starting Gunicorn with $GUNICORN_WORKERS workers"
 echo "--> Nominatim is ready to accept requests"
 
 cd "$PROJECT_DIR"
-sudo -u nominatim gunicorn \
+sudo -E -u nominatim gunicorn \
   --bind :8080 \
   --pid $GUNICORN_PID_FILE \
   --workers $GUNICORN_WORKERS \

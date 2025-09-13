@@ -82,7 +82,6 @@ COPY conf.d/postgres-tuning.conf /etc/postgresql/16/main/conf.d/
 
 COPY config.sh /app/config.sh
 COPY init.sh /app/init.sh
-COPY start.sh /app/start.sh
 
 # Collapse image to single layer.
 FROM scratch
@@ -93,7 +92,6 @@ COPY --from=build / /
 # Please override this
 ENV NOMINATIM_PASSWORD=qaIACxO6wMR3
 ENV WARMUP_ON_STARTUP=false
-ENV NOMINATIM_DATABASE_DSN=pgsql:host=localhost;port=5432;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
 
 ARG PBF_URL
 ENV PBF_URL=$PBF_URL
@@ -113,5 +111,8 @@ EXPOSE 8080
 COPY conf.d/env $PROJECT_DIR/.env
 
 RUN /app/init.sh
+
+COPY start.sh /app/start.sh
+
 
 CMD ["/app/start.sh"]

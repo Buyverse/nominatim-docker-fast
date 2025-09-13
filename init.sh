@@ -1,4 +1,5 @@
 #!/bin/bash -ex
+export NOMINATIM_DATABASE_DSN=pgsql:host=/tmp;port=5432;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
 
 IMPORT_FINISHED=/var/lib/postgresql/16/main/import-finished
 if [ -f ${IMPORT_FINISHED} ]; then
