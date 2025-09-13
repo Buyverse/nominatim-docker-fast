@@ -1,5 +1,4 @@
 #!/bin/bash -ex
-export NOMINATIM_DATABASE_DSN=pgsql:host=/tmp;port=5432;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
 
 IMPORT_FINISHED=/var/lib/postgresql/16/main/import-finished
 if [ -f ${IMPORT_FINISHED} ]; then
@@ -98,6 +97,12 @@ sudo -E -u postgres psql -c "ALTER USER \"www-data\" WITH ENCRYPTED PASSWORD '${
 sudo -E -u postgres psql postgres -c "DROP DATABASE IF EXISTS nominatim"
 
 chown -R nominatim:nominatim ${PROJECT_DIR}
+
+export NOMINATIM_DATABASE_DSN=pgsql:host=localhost;port=5433;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
+export PGSSLMODE=disable
+export PGPASSWORD=$NOMINATIM_PASSWORD
+export PGHOST=localhost
+export PGPORT=5433
 
 cd ${PROJECT_DIR}
 

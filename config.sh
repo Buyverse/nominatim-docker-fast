@@ -1,4 +1,4 @@
-CONFIG_FILE=${PROJECT_DIR}/.env
+export CONFIG_FILE=${PROJECT_DIR}/.env
 
 
 if [[ "$PBF_URL" = "" && "$PBF_PATH" = "" ]]  ||  [[ "$PBF_URL" != "" && "$PBF_PATH" != "" ]]; then
@@ -43,6 +43,8 @@ if [ ! -z "$POSTGRES_CHECKPOINT_TIMEOUT" ]; then sed -i "s/checkpoint_timeout = 
 if [ ! -z "$POSTGRES_CHECKPOINT_COMPLETION_TARGET" ]; then sed -i "s/checkpoint_completion_target = 0.9/checkpoint_completion_target = $POSTGRES_CHECKPOINT_COMPLETION_TARGET/g" /etc/postgresql/16/main/conf.d/postgres-tuning.conf; fi
 if [ ! -z "$POSTGRES_MAX_CONNECTIONS" ]; then echo "max_connections = $POSTGRES_MAX_CONNECTIONS" >> /etc/postgresql/16/main/conf.d/postgres-tuning.conf; fi
 echo "unix_socket_directories = '/tmp'" >> /etc/postgresql/16/main/conf.d/postgres-tuning.conf
+echo 'listen_addresses = 'localhost'' >> /etc/postgresql/16/main/conf.d/postgres-tuning.conf
+echo 'port = 5433' >> /etc/postgresql/16/main/conf.d/postgres-tuning.conf
 
 # import style tuning
 

@@ -1,8 +1,9 @@
 #!/bin/bash -ex
+export NOMINATIM_DATABASE_DSN=pgsql:host=localhost;port=5433;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
 export PGSSLMODE=disable
 export PGPASSWORD=$NOMINATIM_PASSWORD
 export PGHOST=localhost
-export NOMINATIM_DATABASE_DSN=pgsql:host=/tmp;port=5432;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
+export PGPORT=5433
 
 tailpid=0
 replicationpid=0
