@@ -46,10 +46,6 @@ RUN  \
         openssh-client
 
 
-# Configure postgres.
-RUN true \
-    && echo "host all all 0.0.0.0/0 md5" >> /etc/postgresql/16/main/pg_hba.conf \
-    && echo "listen_addresses='*'" >> /etc/postgresql/16/main/postgresql.conf
 
 ARG NOMINATIM_VERSION
 ARG USER_AGENT
@@ -90,12 +86,13 @@ COPY --from=build / /
 
 
 # Please override this
-ENV NOMINATIM_PASSWORD=qaIACxO6wMR3
-ENV WARMUP_ON_STARTUP=false
+ENV PGSSLMODE=disable
 
 ARG PBF_URL
 ENV PBF_URL=$PBF_URL
-RUN if [ -z "$PBF_URL" ]; then echo "ERROR: PBF_URL build argument must be set" >&2; exit 1; fi
+
+ARG NOMINATIM_DATABASE_DSN
+ENV NOMINATIM_DATABASE_DSN=$NOMINATIM_DATABASE_DSN
 
 ENV PROJECT_DIR=/nominatim
 
@@ -105,7 +102,6 @@ ENV USER_AGENT=$USER_AGENT
 
 WORKDIR /app
 
-EXPOSE 5433
 EXPOSE 8080
 
 COPY conf.d/env $PROJECT_DIR/.env
@@ -114,5 +110,6 @@ RUN /app/init.sh
 
 COPY start.sh /app/start.sh
 
+ENV NOMINATIM_DATABASE_DSN=""
 
 CMD ["/app/start.sh"]

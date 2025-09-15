@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-IMPORT_FINISHED=/var/lib/postgresql/16/main/import-finished
+export IMPORT_FINISHED="/opt/import-finished"
 if [ -f ${IMPORT_FINISHED} ]; then
   exit 0
 fi
@@ -21,7 +21,7 @@ fi
 if id nominatim >/dev/null 2>&1; then
   echo "user nominatim already exists"
 else
-  useradd -m -p ${NOMINATIM_PASSWORD} nominatim
+  useradd -m  nominatim
 fi
 
 # we re-host the files on a Hetzner storage box because inconsiderate users eat up all of
@@ -79,82 +79,28 @@ if [ "$PBF_PATH" != "" ]; then
 fi
 
 
-# if we use a bind mount then the PG directory is empty and we have to create it
-if [ ! -f /var/lib/postgresql/16/main/PG_VERSION ]; then
-  chown postgres:postgres /var/lib/postgresql/16/main
-  sudo -u postgres /usr/lib/postgresql/16/bin/initdb -D /var/lib/postgresql/16/main
-fi
-
-# temporarily enable unsafe import optimization config
-cp /etc/postgresql/16/main/conf.d/postgres-import.conf.disabled /etc/postgresql/16/main/conf.d/postgres-import.conf
-
-sudo service postgresql start && \
-sudo -E -u postgres psql postgres -c "SELECT 1 FROM pg_roles WHERE rolname='nominatim'" | grep -q 1 || sudo -E -u postgres createuser -s nominatim && \
-sudo -E -u postgres psql postgres -c "SELECT 1 FROM pg_roles WHERE rolname='www-data'" | grep -q 1 || sudo -E -u postgres createuser -SDR www-data && \
-sudo -E -u postgres psql -c "ALTER USER nominatim WITH ENCRYPTED PASSWORD '$NOMINATIM_PASSWORD'" && \
-sudo -E -u postgres psql -c "ALTER USER \"www-data\" WITH ENCRYPTED PASSWORD '${NOMINATIM_PASSWORD}'" && \
-
-sudo -E -u postgres psql postgres -c "DROP DATABASE IF EXISTS nominatim"
 
 chown -R nominatim:nominatim ${PROJECT_DIR}
 
-export NOMINATIM_DATABASE_DSN=pgsql:host=localhost;port=5433;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
-export PGSSLMODE=disable
-export PGPASSWORD=$NOMINATIM_PASSWORD
-export PGHOST=localhost
-export PGPORT=5433
 
 cd ${PROJECT_DIR}
 
-if [ "$REVERSE_ONLY" = "true" ]; then
-  sudo -E -u nominatim nominatim import --osm-file $OSMFILE --threads $THREADS --reverse-only
-else
-  sudo -E -u nominatim nominatim import --osm-file $OSMFILE --threads $THREADS
-fi
 
-if [ -f tiger-nominatim-preprocessed.csv.tar.gz ]; then
-  echo "Importing Tiger address data"
-  sudo -E -u nominatim nominatim add-data --tiger-data tiger-nominatim-preprocessed.csv.tar.gz
-fi
 
 # Sometimes Nominatim marks parent places to be indexed during the initial
 # import which leads to '123 entries are not yet indexed' errors in --check-database
 # Thus another quick additional index here for the remaining places
 sudo -E -u nominatim nominatim index --threads $THREADS
 
-sudo -E -u nominatim nominatim admin --check-database
-
-if [ "$REPLICATION_URL" != "" ]; then
-  sudo -E -u nominatim nominatim replication --init
-  if [ "$FREEZE" = "true" ]; then
-    echo "Skipping freeze because REPLICATION_URL is not empty"
-  fi
-else
-  if [ "$FREEZE" = "true" ]; then
-    echo "Freezing database"
-    sudo -E -u nominatim nominatim freeze
-  fi
-fi
 
 export NOMINATIM_QUERY_TIMEOUT=600
 export NOMINATIM_REQUEST_TIMEOUT=3600
-if [ "$REVERSE_ONLY" = "true" ]; then
-  sudo -H -E -u nominatim nominatim admin --warm --reverse
-else
-  sudo -H -E -u nominatim nominatim admin --warm
-fi
 export NOMINATIM_QUERY_TIMEOUT=10
 export NOMINATIM_REQUEST_TIMEOUT=60
 
 # gather statistics for query planner to potentially improve query performance
 # see, https://github.com/osm-search/Nominatim/issues/1023
 # and  https://github.com/osm-search/Nominatim/issues/1139
-sudo -E -u nominatim psql -d nominatim -c "ANALYZE VERBOSE"
-
-sudo service postgresql stop
-
-# Remove slightly unsafe postgres config overrides that made the import faster
-rm /etc/postgresql/16/main/conf.d/postgres-import.conf
 
 echo "Deleting downloaded dumps in ${PROJECT_DIR}"
 rm -f ${PROJECT_DIR}/*sql.gz

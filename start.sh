@@ -1,18 +1,16 @@
 #!/bin/bash -ex
-export NOMINATIM_DATABASE_DSN=pgsql:host=localhost;port=5433;dbname=nominatim;sslmode=disable;user=nominatim;password=$NOMINATIM_PASSWORD
-export PGSSLMODE=disable
-export PGPASSWORD=$NOMINATIM_PASSWORD
-export PGHOST=localhost
-export PGPORT=5433
-
-tailpid=0
 replicationpid=0
 GUNICORN_PID_FILE=/tmp/gunicorn.pid
 # send gunicorn logs straight to the console without buffering: https://stackoverflow.com/questions/59812009
 export PYTHONUNBUFFERED=1
 
+if [[ "$NOMINATIM_DATABASE_DSN" = "" ]]; then
+    echo "You need to specify the NOMINATIM_DATABASE_DSN environment variable"
+    echo "e.g. pgsql:host=localhost;port=5433;dbname=nominatim;sslmode=disable;user=nominatim;password=your_password"
+    exit 1
+fi
+
 stopServices() {
-  service postgresql stop
   # Check if the replication process is active
   if [ $replicationpid -ne 0 ]; then
     echo "Shutting down replication process"
@@ -26,13 +24,10 @@ stopServices() {
 }
 trap stopServices SIGTERM TERM INT
 
-IMPORT_FINISHED=/var/lib/postgresql/16/main/import-finished
 
 chown -R nominatim:nominatim ${PROJECT_DIR}
 
-service postgresql start
 
-cd ${PROJECT_DIR} && sudo -E -u nominatim nominatim refresh --website --functions
 
 # start continous replication process
 if [ "$REPLICATION_URL" != "" ] && [ "$FREEZE" != "true" ]; then
@@ -56,26 +51,10 @@ if [ "$REPLICATION_URL" != "" ] && [ "$FREEZE" != "true" ]; then
 fi
 
 # fork a process and wait for it
-tail -Fv /var/log/postgresql/postgresql-16-main.log &
 tailpid=${!}
 
 
-if [ "$WARMUP_ON_STARTUP" = "true" ]; then
-  export NOMINATIM_QUERY_TIMEOUT=600
-  export NOMINATIM_REQUEST_TIMEOUT=3600
-  if [ "$REVERSE_ONLY" = "true" ]; then
-    echo "Warm database caches for reverse queries"
-    sudo -H -E -u nominatim nominatim admin --warm --reverse > /dev/null
-  else
-    echo "Warm database caches for search and reverse queries"
-    sudo -H -E -u nominatim nominatim admin --warm > /dev/null
-  fi
-  export NOMINATIM_QUERY_TIMEOUT=10
-  export NOMINATIM_REQUEST_TIMEOUT=60
-  echo "Warming finished"
-else
-  echo "Skipping cache warmup"
-fi
+
 
 # Set default number of workers if not specified
 if [ -z "$GUNICORN_WORKERS" ]; then
@@ -96,4 +75,4 @@ sudo -E -u nominatim gunicorn \
   --worker-class uvicorn.workers.UvicornWorker \
   nominatim_api.server.falcon.server:run_wsgi
 
-wait
+sleep infinity
