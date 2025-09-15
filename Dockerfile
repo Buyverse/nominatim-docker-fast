@@ -108,5 +108,7 @@ RUN /app/init.sh
 
 COPY start.sh /app/start.sh
 
+COPY core.py /usr/local/lib/python3.12/dist-packages/nominatim_api/core.py
+
 
 CMD ["/app/start.sh"]
