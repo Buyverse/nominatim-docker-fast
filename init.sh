@@ -87,11 +87,6 @@ cd ${PROJECT_DIR}
 
 
 
-# Sometimes Nominatim marks parent places to be indexed during the initial
-# import which leads to '123 entries are not yet indexed' errors in --check-database
-# Thus another quick additional index here for the remaining places
-sudo -E -u nominatim nominatim index --threads $THREADS
-
 
 export NOMINATIM_QUERY_TIMEOUT=600
 export NOMINATIM_REQUEST_TIMEOUT=3600

@@ -8,11 +8,6 @@ if [[ "$PBF_URL" = "" && "$PBF_PATH" = "" ]]  ||  [[ "$PBF_URL" != "" && "$PBF_P
     exit 1
 fi
 
-if [[ "$NOMINATIM_DATABASE_DSN" = "" ]]; then
-    echo "You need to specify the NOMINATIM_DATABASE_DSN environment variable"
-    echo "e.g. pgsql:host=localhost;port=5433;dbname=nominatim;sslmode=disable;user=nominatim;password=your_password"
-    exit 1
-fi
 
 if [ "$REPLICATION_URL" != "" ]; then
     sed -i "s|__REPLICATION_URL__|$REPLICATION_URL|g" ${CONFIG_FILE}
